@@ -4,7 +4,7 @@ import { getStatus } from "../src/tools/get-status.js";
 describe("get_status", () => {
   it("reports version, uptime and a greeting, with a summary", async () => {
     const startedAt = new Date(Date.now() - 42_000);
-    const result = await getStatus.handler({}, { version: "9.9.9", startedAt });
+    const result = await getStatus.handler({}, { version: "9.9.9", startedAt, azure: { configured: false, missing: [] } });
 
     expect(getStatus.outputSchema.parse(result)).toBeTruthy();
     expect(result.version).toBe("9.9.9");

@@ -1,6 +1,8 @@
 import express, { type Express } from "express";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { DefaultAzureCredential } from "@azure/identity";
+import { createInventory, type Inventory } from "./azure/inventory.js";
 import type { Config } from "./config.js";
 import { registerTool, type ToolContext } from "./tools/define.js";
 import { tools } from "./tools/index.js";
@@ -11,8 +13,37 @@ function buildMcpServer(ctx: ToolContext): McpServer {
   return server;
 }
 
-export function createApp(config: Config, startedAt = new Date()): Express {
-  const ctx: ToolContext = { version: config.version, startedAt };
+function armInventory(subscriptionId: string, resourceGroup: string): Inventory {
+  // DefaultAzureCredential picks up the AZURE_* values deploy.yml injects (ADR-010).
+  const credential = new DefaultAzureCredential();
+  return createInventory({
+    subscriptionId,
+    resourceGroup,
+    getToken: async () => {
+      const token = await credential.getToken("https://management.azure.com/.default");
+      if (!token) throw new Error("no token");
+      return token.token;
+    },
+  });
+}
+
+export interface AppDeps {
+  startedAt?: Date;
+  /** Tests inject a fake; otherwise built from config.azure. */
+  inventory?: Inventory;
+}
+
+export function createApp(config: Config, deps: AppDeps = {}): Express {
+  // Built once per process, so the inventory cache is shared by every request.
+  const azure: ToolContext["azure"] = config.azure.configured
+    ? {
+        configured: true,
+        resourceGroup: config.azure.resourceGroup,
+        inventory:
+          deps.inventory ?? armInventory(config.azure.subscriptionId, config.azure.resourceGroup),
+      }
+    : { configured: false, missing: config.azure.missing };
+  const ctx: ToolContext = { version: config.version, startedAt: deps.startedAt ?? new Date(), azure };
   const app = express();
   app.use(express.json({ limit: "1mb" }));
 

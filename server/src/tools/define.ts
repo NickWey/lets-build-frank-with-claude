@@ -4,12 +4,17 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
+import type { Inventory } from "../azure/inventory.js";
 
 export const TOOL_VERBS = ["get", "list", "search", "summarize"] as const;
 
 export interface ToolContext {
   version: string;
   startedAt: Date;
+  /** Azure tools fail closed when Frank has no Azure settings (ADR-009). */
+  azure:
+    | { configured: true; resourceGroup: string; inventory: Inventory }
+    | { configured: false; missing: string[] };
 }
 
 export interface ToolResult {
@@ -20,6 +25,8 @@ export interface ToolResult {
 export interface FrankTool<In extends z.ZodObject = z.ZodObject> {
   name: string;
   description: string;
+  /** True for tools that reach outside Frank, e.g. to Azure. Defaults to false. */
+  openWorld?: boolean;
   /** Strict: unknown fields are rejected. */
   inputSchema: In;
   outputSchema: z.ZodObject;
@@ -38,7 +45,7 @@ export function registerTool(server: McpServer, tool: FrankTool, ctx: ToolContex
       inputSchema: tool.inputSchema,
       outputSchema: tool.outputSchema,
       // ADR-002: Frank observes; he does not act.
-      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: tool.openWorld ?? false },
     },
     async (input: unknown): Promise<CallToolResult> => {
       try {
