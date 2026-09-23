@@ -42,6 +42,7 @@ The root `Dockerfile` is the **test gate on `main`**. Both of its build stages r
 - **The Docker build puts the console next to Frank.** It copies `ui/dist` → `/app/public`. `server/src/config.ts` resolves `public/` as the package root plus `/public`, which is one level above `src/` or `dist/`. `FRANK_PUBLIC_DIR` overrides it.
 - **Config comes only from environment variables** (ADR-001). The container port is `3000`, and it must match in three places: the `Dockerfile`, `config.ts`, and `--target-port` in `deploy.yml`.
 - **Tools** live in `server/src/tools/`, one module per tool, and are registered in `tools/index.ts`. Every tool is a `defineTool({...})`. `registerTool` in `define.ts` is the only place that talks to the SDK. It adds read-only annotations, returns `structuredContent` plus a JSON text copy, and turns thrown errors into `isError: true` with a plain message.
+- **`server/src/azure/inventory.ts` is the only code that calls Azure** (ADR-009). The credential is Contributor, so this file is where read-only is actually enforced. It only GETs the group's resources URL and nextLinks that pass `isOwnLink`, caches for 30 s (failures included), and allows one refresh at a time. Tools reach it through `ctx.azure`, which is built once in `createApp` so the cache is shared across requests.
 - **The console builds its call forms from each tool's JSON input schema** (`ui/src/schemaForm.ts`). A new tool shows up in the Tools page with no UI changes.
 
 ## Tool rules (ADR-002). These are policy.

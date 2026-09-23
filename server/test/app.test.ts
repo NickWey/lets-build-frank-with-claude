@@ -51,6 +51,18 @@ describe("MCP over Streamable HTTP", () => {
     await client.close();
   });
 
+  it("list_resources fails closed, in plain language, with no Azure settings", async () => {
+    const client = new Client({ name: "test", version: "0" });
+    await client.connect(new StreamableHTTPClientTransport(new URL(`${base}/mcp`)));
+    const result = await client.callTool({ name: "list_resources", arguments: {} });
+    expect(result.isError).toBe(true);
+    expect(JSON.stringify(result.content)).toContain("no Azure settings");
+    const { tools } = await client.listTools();
+    const hints = Object.fromEntries(tools.map((t) => [t.name, t.annotations?.openWorldHint]));
+    expect(hints).toEqual({ get_status: false, list_resources: true });
+    await client.close();
+  });
+
   it("returns an error for unknown arguments rather than ignoring them", async () => {
     const client = new Client({ name: "test", version: "0" });
     await client.connect(new StreamableHTTPClientTransport(new URL(`${base}/mcp`)));
