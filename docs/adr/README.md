@@ -15,7 +15,7 @@ your agents at them by number (*"implement ADR-003"*).
 | [ADR-007](ADR-007-mcp-endpoint-authentication.md) | MCP endpoint requires caller authentication | **Rejected** — see the ADR for what that accepts |
 | [ADR-010](ADR-010-one-open-credential.md) | One deliberately open classroom credential (supersedes 006's credential model) | Accepted |
 | ADR-008 | Connect Frank to the GitHub pipeline so he can report on builds | *optional stretch — not scheduled* |
-| ADR-009 | Let Frank read what is running in his own resource group | *you write this in class, 2:40* |
+| [ADR-009](ADR-009-read-own-resource-group.md) | Frank lists what is in the class resource group — an inventory, nothing more | Proposed |
 
 New ADR? Copy [`template.md`](template.md), take the next number, and follow the
 workflow in ADR-000: **Claude drafts → Copilot attacks → a human decides.**
